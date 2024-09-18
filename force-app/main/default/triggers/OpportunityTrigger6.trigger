@@ -1,6 +1,4 @@
 trigger OpportunityTrigger6 on  Opportunity (before delete) 
 {
-    if (Trigger.isDelete && Trigger.isBefore) {
-        OpportunityTriggerHandler6.preventClosedWonDelete(Trigger.old);
-    }
+    OpportunityTriggerHandler6.preventClosedWonDelete(Trigger.old);
 }
