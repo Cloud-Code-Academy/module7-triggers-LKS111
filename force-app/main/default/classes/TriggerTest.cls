@@ -29,7 +29,7 @@ public with sharing class TriggerTest {
     * Trigger should only fire on insert.
     */
     @IsTest 
-    static void testAccountTrigger_setTypeProspect() {
+    static void testAccountTrigger_SetTypeProspect() {
         // Prepare the test data
         List<Account> accountTypeProspect = new List<Account>();
         List<Account> accountTypeNotChange = new List<Account>();
@@ -106,14 +106,14 @@ public with sharing class TriggerTest {
 
         // Retrieve the accounts again
         List<Account> insertedAccounts = [SELECT Id, 
-                                          BillingStreet, 
-                                          BillingCity, 
-                                          BillingState, 
-                                          BillingPostalCode, 
-                                          BillingCountry 
-                                          FROM Account 
-                                          WHERE Id IN :accountsToInsert
-                                          ORDER BY AnnualRevenue ASC];
+            BillingStreet, 
+            BillingCity, 
+            BillingState, 
+            BillingPostalCode, 
+            BillingCountry 
+                FROM Account 
+                WHERE Id IN :accountsToInsert
+                ORDER BY AnnualRevenue ASC];
 
         // Assert that the Billing Address fields have been correctly copied from the Shipping Address for each account
         for (Integer i = 0; i < insertedAccounts.size(); i++) {
@@ -215,12 +215,14 @@ public with sharing class TriggerTest {
             accountsToInsert.add(acc);
         }
 
-        // Perform the test
+    // Set DMLOptions to bypass duplicate rules (if necessary)
+    Database.DMLOptions dml = new Database.DMLOptions();
+    dml.DuplicateRuleHeader.allowSave = true;
+    dml.DuplicateRuleHeader.runAsCurrentUser = true;
+    
+        // Perform the test with DML options
         Test.startTest();
-        Database.DMLOptions dml = new Database.DMLOptions(); 
-        dml.DuplicateRuleHeader.allowSave = true;
-        dml.DuplicateRuleHeader.runAsCurrentUser = true;
-        Database.insert(accountsToInsert, dml);
+        Database.insert(accountsToInsert, dml); 
         Test.stopTest();
 
         // Retrieve the newly created Contacts
@@ -235,15 +237,19 @@ public with sharing class TriggerTest {
             System.assertEquals('default@email.com', con.Email, 'Contact Email is incorrect.');
             System.assertNotEquals(null, con.AccountId, 'Contact AccountId is null.');
         }
-
+        
+        // Delete the created contacts to simulate clean up and further test scenario
         delete contacts;
+        // Update the inserted accounts 
         for (Account acc : accountsToInsert) {
             acc.Name = 'Test Account Updated';
         }
 
         update accountsToInsert;
 
+       // After updating the accounts, check that no new contacts were created
         List<Contact> updatedContacts = [SELECT Id, LastName, Email, AccountId FROM Contact];
+        
         // Assert that the Contacts no contacts exists
         System.assertEquals(0, updatedContacts.size(), 'Contacts should not exist.');
     }
